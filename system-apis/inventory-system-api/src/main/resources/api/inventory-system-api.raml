@@ -1,0 +1,117 @@
+#%RAML 1.0
+title: TradeBridge Inventory System API
+version: v1
+baseUri: http://localhost:8085/api
+
+types:
+  Product:
+    type: object
+    properties:
+      productId: string
+      sku: string
+      name: string
+      category: string
+      unitPrice: number
+      stockQuantity: number
+
+  ErrorResponse:
+    type: object
+    properties:
+      status: string
+      errorCode: string
+      message: string
+      timestamp: datetime
+
+/products:
+  get:
+    description: Retrieve all products from the database.
+    responses:
+      200:
+        body:
+          application/json:
+            type: Product[]
+            example:
+              [
+                {
+                  "productId": "PRD-1001",
+                  "sku": "WM-BLK-01",
+                  "name": "Wireless Mouse",
+                  "category": "Electronics",
+                  "unitPrice": 249.99,
+                  "stockQuantity": 84
+                }
+              ]
+      500:
+        body:
+          application/json:
+            type: ErrorResponse
+
+  post:
+    description: Insert a new product into the database.
+    body:
+      application/json:
+        type: Product
+        example:
+          {
+            "productId": "PRD-1001",
+            "sku": "WM-BLK-01",
+            "name": "Wireless Mouse",
+            "category": "Electronics",
+            "unitPrice": 249.99,
+            "stockQuantity": 84
+          }
+    responses:
+      201:
+        body:
+          application/json:
+            type: Product
+      500:
+        body:
+          application/json:
+            type: ErrorResponse
+
+  /{productId}:
+    get:
+      description: Retrieve a single product by ID from the database.
+      responses:
+        200:
+          body:
+            application/json:
+              type: Product
+        404:
+          body:
+            application/json:
+              type: ErrorResponse
+              example:
+                {
+                  "status": "error",
+                  "errorCode": "PRODUCT_NOT_FOUND",
+                  "message": "Product PRD-1001 was not found",
+                  "timestamp": "2026-06-20T10:15:00Z"
+                }
+        500:
+          body:
+            application/json:
+              type: ErrorResponse
+
+    put:
+      description: Update stock quantity for a product in the database.
+      body:
+        application/json:
+          example:
+            {
+              "stockQuantity": 82
+            }
+      responses:
+        200:
+          body:
+            application/json:
+              type: Product
+        404:
+          body:
+            application/json:
+              type: ErrorResponse
+        500:
+          body:
+            application/json:
+              type: ErrorResponse

@@ -1,0 +1,125 @@
+#%RAML 1.0
+title: TradeBridge Inventory Management Process API
+version: v1
+baseUri: http://localhost:8084/api
+
+types:
+  Product:
+    type: object
+    properties:
+      productId: string
+      sku: string
+      name: string
+      category: string
+      unitPrice: number
+      stockQuantity: number
+
+  StockUpdateRequest:
+    type: object
+    properties:
+      productId: string
+      quantity: number
+      operation:
+        type: string
+        enum: [ADD, DEDUCT]
+
+  StockUpdateResponse:
+    type: object
+    properties:
+      productId: string
+      previousStock: number
+      newStock: number
+      operation: string
+      timestamp: datetime
+
+  ErrorResponse:
+    type: object
+    properties:
+      status: string
+      errorCode: string
+      message: string
+      timestamp: datetime
+
+/inventory:
+  get:
+    description: Retrieve all products with their current stock levels.
+    queryParameters:
+      lowStock:
+        type: boolean
+        required: false
+        description: If true, returns only products with stock below 10 units
+    responses:
+      200:
+        body:
+          application/json:
+            type: Product[]
+            example:
+              [
+                {
+                  "productId": "PRD-1001",
+                  "sku": "WM-BLK-01",
+                  "name": "Wireless Mouse",
+                  "category": "Electronics",
+                  "unitPrice": 249.99,
+                  "stockQuantity": 84
+                }
+              ]
+      500:
+        body:
+          application/json:
+            type: ErrorResponse
+
+  /update:
+    put:
+      description: |
+        Update stock quantity for a product.
+        Use operation ADD to increase stock or DEDUCT to decrease it.
+        Returns an error if a DEDUCT would result in negative stock.
+      body:
+        application/json:
+          type: StockUpdateRequest
+          example:
+            {
+              "productId": "PRD-1001",
+              "quantity": 2,
+              "operation": "DEDUCT"
+            }
+      responses:
+        200:
+          body:
+            application/json:
+              type: StockUpdateResponse
+              example:
+                {
+                  "productId": "PRD-1001",
+                  "previousStock": 84,
+                  "newStock": 82,
+                  "operation": "DEDUCT",
+                  "timestamp": "2026-06-20T10:15:00Z"
+                }
+        400:
+          body:
+            application/json:
+              type: ErrorResponse
+              example:
+                {
+                  "status": "error",
+                  "errorCode": "INSUFFICIENT_STOCK",
+                  "message": "Cannot deduct 2 units. Only 1 unit available for PRD-1001",
+                  "timestamp": "2026-06-20T10:15:00Z"
+                }
+        404:
+          body:
+            application/json:
+              type: ErrorResponse
+              example:
+                {
+                  "status": "error",
+                  "errorCode": "PRODUCT_NOT_FOUND",
+                  "message": "Product PRD-1001 was not found",
+                  "timestamp": "2026-06-20T10:15:00Z"
+                }
+        500:
+          body:
+            application/json:
+              type: ErrorResponse

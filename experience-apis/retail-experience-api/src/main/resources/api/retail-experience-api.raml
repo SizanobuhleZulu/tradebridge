@@ -1,0 +1,231 @@
+#%RAML 1.0
+title: TradeBridge Retail Experience API
+version: v1
+baseUri: http://localhost:8081/api
+
+types:
+  Product:
+    type: object
+    properties:
+      productId: string
+      sku: string
+      name: string
+      category: string
+      unitPrice: number
+      stockQuantity: number
+
+  OrderItem:
+    type: object
+    properties:
+      productId: string
+      quantity: number
+
+  OrderRequest:
+    type: object
+    properties:
+      customerId: string
+      items:
+        type: array
+        items: OrderItem
+
+  OrderItemResponse:
+    type: object
+    properties:
+      productId: string
+      quantity: number
+      unitPrice: number
+      lineTotal: number
+
+  OrderResponse:
+    type: object
+    properties:
+      orderId: string
+      customerId: string
+      orderDate: datetime
+      status: string
+      items:
+        type: array
+        items: OrderItemResponse
+      totalAmount: number
+
+  ErrorResponse:
+    type: object
+    properties:
+      status: string
+      errorCode: string
+      message: string
+      timestamp: datetime
+
+/products:
+  get:
+    description: Retrieve all available products. Optionally filter by category.
+    queryParameters:
+      category:
+        type: string
+        required: false
+        description: Filter products by category e.g. Electronics
+    responses:
+      200:
+        body:
+          application/json:
+            type: Product[]
+            example:
+              [
+                {
+                  "productId": "PRD-1001",
+                  "sku": "WM-BLK-01",
+                  "name": "Wireless Mouse",
+                  "category": "Electronics",
+                  "unitPrice": 249.99,
+                  "stockQuantity": 84
+                },
+                {
+                  "productId": "PRD-1042",
+                  "sku": "KB-WHT-02",
+                  "name": "Mechanical Keyboard",
+                  "category": "Electronics",
+                  "unitPrice": 899.99,
+                  "stockQuantity": 32
+                }
+              ]
+      500:
+        body:
+          application/json:
+            type: ErrorResponse
+            example:
+              {
+                "status": "error",
+                "errorCode": "INTERNAL_SERVER_ERROR",
+                "message": "An unexpected error occurred",
+                "timestamp": "2026-06-20T10:15:00Z"
+              }
+
+  /{productId}:
+    get:
+      description: Retrieve a single product by its unique ID.
+      responses:
+        200:
+          body:
+            application/json:
+              type: Product
+              example:
+                {
+                  "productId": "PRD-1001",
+                  "sku": "WM-BLK-01",
+                  "name": "Wireless Mouse",
+                  "category": "Electronics",
+                  "unitPrice": 249.99,
+                  "stockQuantity": 84
+                }
+        404:
+          body:
+            application/json:
+              type: ErrorResponse
+              example:
+                {
+                  "status": "error",
+                  "errorCode": "PRODUCT_NOT_FOUND",
+                  "message": "Product PRD-1001 was not found",
+                  "timestamp": "2026-06-20T10:15:00Z"
+                }
+        500:
+          body:
+            application/json:
+              type: ErrorResponse
+
+/orders:
+  post:
+    description: Place a new order. Checks stock availability before confirming.
+    body:
+      application/json:
+        type: OrderRequest
+        example:
+          {
+            "customerId": "CUST-3301",
+            "items": [
+              { "productId": "PRD-1001", "quantity": 2 },
+              { "productId": "PRD-1042", "quantity": 1 }
+            ]
+          }
+    responses:
+      201:
+        body:
+          application/json:
+            type: OrderResponse
+            example:
+              {
+                "orderId": "ORD-88421",
+                "customerId": "CUST-3301",
+                "orderDate": "2026-06-20T10:15:00Z",
+                "status": "CONFIRMED",
+                "items": [
+                  {
+                    "productId": "PRD-1001",
+                    "quantity": 2,
+                    "unitPrice": 249.99,
+                    "lineTotal": 499.98
+                  },
+                  {
+                    "productId": "PRD-1042",
+                    "quantity": 1,
+                    "unitPrice": 899.99,
+                    "lineTotal": 899.99
+                  }
+                ],
+                "totalAmount": 1399.97
+              }
+      400:
+        body:
+          application/json:
+            type: ErrorResponse
+            example:
+              {
+                "status": "error",
+                "errorCode": "INSUFFICIENT_STOCK",
+                "message": "Requested quantity exceeds available stock for PRD-1001",
+                "timestamp": "2026-06-20T10:15:00Z"
+              }
+      500:
+        body:
+          application/json:
+            type: ErrorResponse
+
+  /{orderId}:
+    get:
+      description: Retrieve a specific order by its unique ID.
+      responses:
+        200:
+          body:
+            application/json:
+              type: OrderResponse
+              example:
+                {
+                  "orderId": "ORD-88421",
+                  "customerId": "CUST-3301",
+                  "orderDate": "2026-06-20T10:15:00Z",
+                  "status": "CONFIRMED",
+                  "items": [
+                    {
+                      "productId": "PRD-1001",
+                      "quantity": 2,
+                      "unitPrice": 249.99,
+                      "lineTotal": 499.98
+                    }
+                  ],
+                  "totalAmount": 499.98
+                }
+        404:
+          body:
+            application/json:
+              type: ErrorResponse
+              example:
+                {
+                  "status": "error",
+                  "errorCode": "ORDER_NOT_FOUND",
+                  "message": "Order ORD-88421 was not found",
+                  "timestamp": "2026-06-20T10:15:00Z"
+                }
+        500:
+          body:
+            application/json:
+              type: ErrorResponse

@@ -1,0 +1,133 @@
+#%RAML 1.0
+title: TradeBridge Orders System API
+version: v1
+baseUri: http://localhost:8086/api
+
+types:
+  OrderItem:
+    type: object
+    properties:
+      productId: string
+      quantity: number
+      unitPrice: number
+      lineTotal: number
+
+  Order:
+    type: object
+    properties:
+      orderId: string
+      customerId: string
+      orderDate: datetime
+      status: string
+      items:
+        type: array
+        items: OrderItem
+      totalAmount: number
+
+  CreateOrderRequest:
+    type: object
+    properties:
+      customerId: string
+      items:
+        type: array
+        items: OrderItem
+      totalAmount: number
+
+  ErrorResponse:
+    type: object
+    properties:
+      status: string
+      errorCode: string
+      message: string
+      timestamp: datetime
+
+/orders:
+  post:
+    description: Insert a new order into the database.
+    body:
+      application/json:
+        type: CreateOrderRequest
+        example:
+          {
+            "customerId": "CUST-3301",
+            "items": [
+              {
+                "productId": "PRD-1001",
+                "quantity": 2,
+                "unitPrice": 249.99,
+                "lineTotal": 499.98
+              }
+            ],
+            "totalAmount": 499.98
+          }
+    responses:
+      201:
+        body:
+          application/json:
+            type: Order
+            example:
+              {
+                "orderId": "ORD-88421",
+                "customerId": "CUST-3301",
+                "orderDate": "2026-06-20T10:15:00Z",
+                "status": "CONFIRMED",
+                "items": [
+                  {
+                    "productId": "PRD-1001",
+                    "quantity": 2,
+                    "unitPrice": 249.99,
+                    "lineTotal": 499.98
+                  }
+                ],
+                "totalAmount": 499.98
+              }
+      500:
+        body:
+          application/json:
+            type: ErrorResponse
+
+  /{orderId}:
+    get:
+      description: Retrieve a single order by ID from the database.
+      responses:
+        200:
+          body:
+            application/json:
+              type: Order
+        404:
+          body:
+            application/json:
+              type: ErrorResponse
+              example:
+                {
+                  "status": "error",
+                  "errorCode": "ORDER_NOT_FOUND",
+                  "message": "Order ORD-88421 was not found",
+                  "timestamp": "2026-06-20T10:15:00Z"
+                }
+        500:
+          body:
+            application/json:
+              type: ErrorResponse
+
+    put:
+      description: Update the status of an existing order.
+      body:
+        application/json:
+          example:
+            {
+              "status": "FULFILLED"
+            }
+      responses:
+        200:
+          body:
+            application/json:
+              type: Order
+        404:
+          body:
+            application/json:
+              type: ErrorResponse
+        500:
+          body:
+            application/json:
+              type: ErrorResponse

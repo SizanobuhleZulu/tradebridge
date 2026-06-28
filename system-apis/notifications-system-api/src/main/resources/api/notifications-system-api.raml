@@ -1,0 +1,85 @@
+#%RAML 1.0
+title: TradeBridge Notifications System API
+version: v1
+baseUri: http://localhost:8087/api
+
+types:
+  NotificationRequest:
+    type: object
+    properties:
+      notificationType:
+        type: string
+        enum: [ORDER_CONFIRMATION, LOW_STOCK_ALERT, ORDER_FAILED]
+      recipientEmail: string
+      subject: string
+      body: string
+
+  NotificationResponse:
+    type: object
+    properties:
+      notificationType: string
+      recipientEmail: string
+      subject: string
+      timestamp: datetime
+      delivered: boolean
+
+  ErrorResponse:
+    type: object
+    properties:
+      status: string
+      errorCode: string
+      message: string
+      timestamp: datetime
+
+/notifications:
+  post:
+    description: |
+      Send an email notification. Supports three notification types:
+      ORDER_CONFIRMATION - sent when an order is successfully placed,
+      LOW_STOCK_ALERT - sent when product stock drops below 10 units,
+      ORDER_FAILED - sent when an order cannot be completed.
+    body:
+      application/json:
+        type: NotificationRequest
+        example:
+          {
+            "notificationType": "ORDER_CONFIRMATION",
+            "recipientEmail": "customer@example.com",
+            "subject": "Your TradeBridge order has been confirmed",
+            "body": "Dear Customer, your order ORD-88421 has been confirmed. Total amount: R499.98"
+          }
+    responses:
+      200:
+        body:
+          application/json:
+            type: NotificationResponse
+            example:
+              {
+                "notificationType": "ORDER_CONFIRMATION",
+                "recipientEmail": "customer@example.com",
+                "subject": "Your TradeBridge order has been confirmed",
+                "timestamp": "2026-06-20T10:15:00Z",
+                "delivered": true
+              }
+      400:
+        body:
+          application/json:
+            type: ErrorResponse
+            example:
+              {
+                "status": "error",
+                "errorCode": "INVALID_EMAIL",
+                "message": "Recipient email address is invalid",
+                "timestamp": "2026-06-20T10:15:00Z"
+              }
+      500:
+        body:
+          application/json:
+            type: ErrorResponse
+            example:
+              {
+                "status": "error",
+                "errorCode": "NOTIFICATION_FAILED",
+                "message": "Failed to deliver notification",
+                "timestamp": "2026-06-20T10:15:00Z"
+              }

@@ -1,0 +1,125 @@
+#%RAML 1.0
+title: TradeBridge Order Processing Process API
+version: v1
+baseUri: http://localhost:8083/api
+
+types:
+  OrderItem:
+    type: object
+    properties:
+      productId: string
+      quantity: number
+
+  OrderRequest:
+    type: object
+    properties:
+      customerId: string
+      items:
+        type: array
+        items: OrderItem
+
+  OrderItemResponse:
+    type: object
+    properties:
+      productId: string
+      quantity: number
+      unitPrice: number
+      lineTotal: number
+
+  OrderResponse:
+    type: object
+    properties:
+      orderId: string
+      customerId: string
+      orderDate: datetime
+      status: string
+      items:
+        type: array
+        items: OrderItemResponse
+      totalAmount: number
+
+  ErrorResponse:
+    type: object
+    properties:
+      status: string
+      errorCode: string
+      message: string
+      timestamp: datetime
+
+/orders:
+  post:
+    description: |
+      Orchestrates the full order creation process.
+      Checks inventory availability, creates the order,
+      deducts stock, and triggers a confirmation notification.
+    body:
+      application/json:
+        type: OrderRequest
+        example:
+          {
+            "customerId": "CUST-3301",
+            "items": [
+              { "productId": "PRD-1001", "quantity": 2 },
+              { "productId": "PRD-1042", "quantity": 1 }
+            ]
+          }
+    responses:
+      201:
+        body:
+          application/json:
+            type: OrderResponse
+            example:
+              {
+                "orderId": "ORD-88421",
+                "customerId": "CUST-3301",
+                "orderDate": "2026-06-20T10:15:00Z",
+                "status": "CONFIRMED",
+                "items": [
+                  {
+                    "productId": "PRD-1001",
+                    "quantity": 2,
+                    "unitPrice": 249.99,
+                    "lineTotal": 499.98
+                  }
+                ],
+                "totalAmount": 499.98
+              }
+      400:
+        body:
+          application/json:
+            type: ErrorResponse
+            example:
+              {
+                "status": "error",
+                "errorCode": "INSUFFICIENT_STOCK",
+                "message": "Requested quantity exceeds available stock for PRD-1001",
+                "timestamp": "2026-06-20T10:15:00Z"
+              }
+      500:
+        body:
+          application/json:
+            type: ErrorResponse
+
+  /{orderId}:
+    get:
+      description: Retrieve a processed order by ID.
+      responses:
+        200:
+          body:
+            application/json:
+              type: OrderResponse
+        404:
+          body:
+            application/json:
+              type: ErrorResponse
+              example:
+                {
+                  "status": "error",
+                  "errorCode": "ORDER_NOT_FOUND",
+                  "message": "Order ORD-88421 was not found",
+                  "timestamp": "2026-06-20T10:15:00Z"
+                }
+        500:
+          body:
+            application/json:
+              type: ErrorResponse

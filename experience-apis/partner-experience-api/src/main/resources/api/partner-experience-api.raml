@@ -1,0 +1,103 @@
+#%RAML 1.0
+title: TradeBridge Partner Experience API
+version: v1
+baseUri: http://localhost:8082/api
+mediaType: application/xml
+
+/purchase-orders:
+  post:
+    description: |
+      Submit a new purchase order from a B2B partner system.
+      The request body must be XML. Internally this is transformed
+      to the canonical JSON format before being processed.
+    body:
+      application/xml:
+        example: |
+          <?xml version="1.0" encoding="UTF-8"?>
+          <purchaseOrder>
+            <partnerCustomerId>CUST-3301</partnerCustomerId>
+            <lineItems>
+              <lineItem>
+                <sku>WM-BLK-01</sku>
+                <qty>2</qty>
+              </lineItem>
+              <lineItem>
+                <sku>KB-WHT-02</sku>
+                <qty>1</qty>
+              </lineItem>
+            </lineItems>
+          </purchaseOrder>
+    responses:
+      201:
+        body:
+          application/xml:
+            example: |
+              <?xml version="1.0" encoding="UTF-8"?>
+              <orderConfirmation>
+                <orderId>ORD-88421</orderId>
+                <partnerCustomerId>CUST-3301</partnerCustomerId>
+                <orderDate>2026-06-20T10:15:00Z</orderDate>
+                <status>CONFIRMED</status>
+                <totalAmount>1399.97</totalAmount>
+              </orderConfirmation>
+      400:
+        body:
+          application/xml:
+            example: |
+              <?xml version="1.0" encoding="UTF-8"?>
+              <error>
+                <status>error</status>
+                <errorCode>INSUFFICIENT_STOCK</errorCode>
+                <message>Requested quantity exceeds available stock</message>
+                <timestamp>2026-06-20T10:15:00Z</timestamp>
+              </error>
+      500:
+        body:
+          application/xml:
+            example: |
+              <?xml version="1.0" encoding="UTF-8"?>
+              <error>
+                <status>error</status>
+                <errorCode>INTERNAL_SERVER_ERROR</errorCode>
+                <message>An unexpected error occurred</message>
+                <timestamp>2026-06-20T10:15:00Z</timestamp>
+              </error>
+
+  /{orderId}:
+    get:
+      description: Retrieve the status of a previously submitted partner order.
+      responses:
+        200:
+          body:
+            application/xml:
+              example: |
+                <?xml version="1.0" encoding="UTF-8"?>
+                <orderConfirmation>
+                  <orderId>ORD-88421</orderId>
+                  <partnerCustomerId>CUST-3301</partnerCustomerId>
+                  <orderDate>2026-06-20T10:15:00Z</orderDate>
+                  <status>CONFIRMED</status>
+                  <totalAmount>1399.97</totalAmount>
+                </orderConfirmation>
+        404:
+          body:
+            application/xml:
+              example: |
+                <?xml version="1.0" encoding="UTF-8"?>
+                <error>
+                  <status>error</status>
+                  <errorCode>ORDER_NOT_FOUND</errorCode>
+                  <message>Order ORD-88421 was not found</message>
+                  <timestamp>2026-06-20T10:15:00Z</timestamp>
+                </error>
+        500:
+          body:
+            application/xml:
+              example: |
+                <?xml version="1.0" encoding="UTF-8"?>
+                <error>
+                  <status>error</status>
+                  <errorCode>INTERNAL_SERVER_ERROR</errorCode>
+                  <message>An unexpected error occurred</message>
+                  <timestamp>2026-06-20T10:15:00Z</timestamp>
+                </error>
